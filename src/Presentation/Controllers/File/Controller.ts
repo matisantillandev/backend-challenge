@@ -54,92 +54,49 @@ export default class Controller implements Routeable, Patheable {
 		const uploadAws = multer({ storage: storageAws.getAwsStorage() })
 
 		this.router
-			.get(`${this.path}/withauth/:db`, [], this.getAllObjsWithoutAuth)
-			.get(this.path, [this.authMid.authenticate], this.getAllObjs)
-			.get(`${this.path}/aws/:fileName`, [], this.getImageByName)
+			.get(`${this.path}`, [this.authMid.authenticate], this.getAllObjs)
+			.get(`${this.path}/aws/:fileName`, [this.authMid.authenticate], this.getImageByName)
 			.get(`${this.path}/:id`, [this.authMid.authenticate, validationProvider.validate(Dto, true)], this.getObjById)
 			.post(this.path, [this.authMid.authenticate, this.authoMid.authorice, validationProvider.validate(Dto)], this.saveObj)
-			.post(`${this.path}/aws`, [uploadAws.single('image')], this.uploadAws)
-			.put(`${this.path}/aws/:fileName/:newName`, [], this.updateImageName)
+			.post(`${this.path}/aws`, [this.authMid.authenticate, uploadAws.single('image')], this.uploadAws)
+			.put(`${this.path}/aws/:fileName/:newName`, [this.authMid.authenticate], this.updateImageName)
 			.put(`${this.path}/:id`, [this.authMid.authenticate, this.authoMid.authorice, validationProvider.validate(Dto, true)], this.updateObj)
 			.delete(`${this.path}/:id`, [this.authMid.authenticate, this.authoMid.authorice], this.deleteObj)
 	}
 
-	private getAllObjsWithoutAuth = async (request: Request, response: Response, next: NextFunction) => {
-		const model: Model<Document, {}> = await this.connectionProvider.getModel(request.params.db, this.schema.name, this.schema)
-
-		let aggregations: any = request.query.aggregations || {}
-
-		if (request.query) {
-			if (request.query.aggregations) {
-				try {
-					aggregations = JSON.parse(aggregations)
-				} catch (error) {
-					error = error
-				}
-			}
-		}
-
+	private getAllObjs = async (request: RequestWithUser, response: Response, next: NextFunction) => {
 		try {
-			const responseService: DomainResponseable = await this.service.getAll(model, aggregations)
-			if (responseService.result) {
+			const images = await this.storageAws.getAwsAllImages()
+			if (Object.entries(images) && Array.isArray(images.Contents) && images.Contents.length > 0) {
+				const content = []
+				images.Contents.map((object) => {
+					content.push({
+						...object,
+						Key: `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${object.Key}`,
+					})
+				})
+
 				this.responserService.res = {
-					result: responseService.result,
-					message: responseService.message,
-					status: responseService.status,
+					result: content,
+					message: 'Images obtenidas con éxito',
+					status: 200,
 					error: '',
 				}
 			} else {
 				this.responserService.res = {
 					result: [],
-					message: responseService.message,
-					status: responseService.status,
-					error: responseService.error,
+					message: 'No se pudieron obtener las imagenes.',
+					status: 500,
+					error: '',
 				}
 			}
-
-			response.status(this.responserService.res.status).send(this.responserService.res)
 		} catch (error) {
 			response.status(500).send({ error })
 		}
-	}
 
-	private getAllObjs = async (request: RequestWithUser, response: Response, next: NextFunction) => {
-		try {
-			const model: Model<Document, {}> = await this.connectionProvider.getModel(request.database, this.schema.name, this.schema)
-
-			let aggregations: any = request.query.aggregations || {}
-
-			if (request.query) {
-				if (request.query.aggregations) {
-					try {
-						aggregations = JSON.parse(aggregations)
-					} catch (error) {
-						error = error
-					}
-				}
-			}
-
-			const responseService: DomainResponseable = await this.service.getAll(model, aggregations)
-
-			if (responseService.result) {
-				this.responserService.res = {
-					result: responseService.result,
-					message: responseService.message,
-					status: responseService.status,
-					error: '',
-				}
-			} else {
-				this.responserService.res = {
-					result: [],
-					message: responseService.message,
-					status: responseService.status,
-					error: responseService.error,
-				}
-			}
-
+		if (this.responserService.res.status) {
 			response.status(this.responserService.res.status).send(this.responserService.res)
-		} catch (error) {
+		} else {
 			response.status(500).send(this.responserService.res)
 		}
 	}

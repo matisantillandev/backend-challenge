@@ -54,6 +54,18 @@ export default class Storage implements GeteableAgreementStorage, GeteableCompan
 		return storage
 	}
 
+	public getAwsAllImages(): multer.StorageEngine {
+		const s3 = new aws.S3({ apiVersion: '2006-03-01' })
+
+		const storage = s3
+			.listObjectsV2({
+				Bucket: process.env.AWS_BUCKET,
+			})
+			.promise()
+
+		return storage
+	}
+
 	public getAwsImage(filename: string): string {
 		const s3 = new aws.S3({ apiVersion: '2006-03-01' })
 		try {

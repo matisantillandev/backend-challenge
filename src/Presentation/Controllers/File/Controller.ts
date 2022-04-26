@@ -56,6 +56,7 @@ export default class Controller implements Routeable, Patheable {
 		this.router
 			.get(`${this.path}/withauth/:db`, [], this.getAllObjsWithoutAuth)
 			.get(this.path, [this.authMid.authenticate], this.getAllObjs)
+			.get(`${this.path}/aws/:fileName`, [], this.getImageByName)
 			.get(`${this.path}/:id`, [this.authMid.authenticate, validationProvider.validate(Dto, true)], this.getObjById)
 			.post(this.path, [this.authMid.authenticate, this.authoMid.authorice, validationProvider.validate(Dto)], this.saveObj)
 			.post(`${this.path}/aws`, [uploadAws.single('image')], this.uploadAws)
@@ -138,6 +139,34 @@ export default class Controller implements Routeable, Patheable {
 
 			response.status(this.responserService.res.status).send(this.responserService.res)
 		} catch (error) {
+			response.status(500).send(this.responserService.res)
+		}
+	}
+
+	private getImageByName = async (request: RequestWithUser, response: Response, next: NextFunction) => {
+		if (request.params.fileName) {
+			try {
+				const url = this.storageAws.getAwsImage(request.params.fileName)
+				this.responserService.res = {
+					result: url,
+					message: 'Get exitoso',
+					status: 200,
+					error: '',
+				}
+			} catch (error) {
+				response.status(500).send({ error })
+			}
+		} else {
+			this.responserService.res = {
+				result: [],
+				message: 'No se encontró el archivo',
+				status: 404,
+				error: 'No se encontró el archivo y por ende, no tenemos su ubicación',
+			}
+		}
+		if (this.responserService.res.status) {
+			response.status(this.responserService.res.status).send(this.responserService.res)
+		} else {
 			response.status(500).send(this.responserService.res)
 		}
 	}

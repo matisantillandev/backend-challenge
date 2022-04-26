@@ -17,7 +17,7 @@ const path = require('path')
 
 @injectable()
 export default class Storage implements GeteableAgreementStorage, GeteableCompanyStorage, GeteablePropertyStorage, GeteableClaimStorage, GeteableAwsStorage {
-	public getAwsStorage(): multer.StorageEngine {
+	constructor() {
 		const credentials = new aws.SharedIniFileCredentials({ profile: process.env.AWS_PROFILE })
 		console.log(credentials)
 		aws.config.credentials = credentials
@@ -31,7 +31,9 @@ export default class Storage implements GeteableAgreementStorage, GeteableCompan
 		})
 
 		aws.config.update({ region: process.env.AWS_REGION })
+	}
 
+	public getAwsStorage(): multer.StorageEngine {
 		const s3 = new aws.S3({ apiVersion: '2006-03-01' })
 
 		try {
@@ -42,7 +44,7 @@ export default class Storage implements GeteableAgreementStorage, GeteableCompan
 					cb(null, { fieldName: file.fieldname })
 				},
 				key: function (req, file, cb) {
-					const name: string = moment().format('YYYY-MM-DDTHH:mm:ssZ').toString() + '-' + file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+					const name: string = /* moment().format('YYYY-MM-DDTHH:mm:ssZ').toString() + '-' +  */ file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 					console.log(name)
 					cb(null, name)
 				},
@@ -53,6 +55,23 @@ export default class Storage implements GeteableAgreementStorage, GeteableCompan
 
 		return storage
 	}
+
+	public getAwsImage(filename: string): string {
+		const s3 = new aws.S3({ apiVersion: '2006-03-01' })
+		try {
+			var storage = s3.getSignedUrl('getObject', {
+				Bucket: process.env.AWS_BUCKET,
+				Key: filename,
+				Expires: 60,
+			})
+		} catch (e) {
+			console.log(e)
+		}
+
+		return storage
+	}
+
+	/*  */
 
 	public getAgreementStorage(): multer.StorageEngine {
 		const plataform: string = process.platform
@@ -92,7 +111,7 @@ export default class Storage implements GeteableAgreementStorage, GeteableCompan
 			},
 			filename: function (req, file, cb) {
 				//normalize picture name
-				const name: string = moment().format('YYYY-MM-DDTHH').toString() + '-' + file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+				const name: string = /* moment().format('YYYY-MM-DDTHH').toString() + '-' +  */ file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 				cb(null, name)
 			},
@@ -185,7 +204,7 @@ export default class Storage implements GeteableAgreementStorage, GeteableCompan
 				cb(null, path)
 			},
 			filename: function (req, file, cb) {
-				var name: string = moment().format('YYYY-MM-DDTHH').toString() + '-' + file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+				var name: string = /* moment().format('YYYY-MM-DDTHH').toString() + '-' + */ file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 				cb(null, name)
 			},
@@ -230,7 +249,7 @@ export default class Storage implements GeteableAgreementStorage, GeteableCompan
 				cb(null, path)
 			},
 			filename: function (req, file, cb) {
-				var name: string = moment().format('YYYY-MM-DDTHH').toString() + '-' + file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+				var name: string = /* moment().format('YYYY-MM-DDTHH').toString() + '-' +  */ file.originalname.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 				cb(null, name)
 			},

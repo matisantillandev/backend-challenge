@@ -23,14 +23,7 @@ import Schemable from '@Domain/Entities/Util/Ports/Schemable'
 
 import GeteableModel from '@Infrastructure/Persistence/Ports/GeteableModel'
 
-//import SessionInterface from '@Domain/Entities/Session/Interface'
-
-//import SessionBuilderable from '@Domain/Entities/Session/Ports/Builderable'
-
-//import Socketable from './../../../utils/Socketable'
-//import SendeableMail from './../../../Aplication/UC/Ports/SendeableMail'
 import Serviceable from '@Domain/Entities/User/Ports/Serviceable'
-import LogueableWithUser from '@src/Domain/Entities/User/Ports/LogueableVerified'
 import config from '@src/config'
 import DataStoredInTokenable from '../../Middlewares/Ports/DataStoredInTokenable'
 import User from '@Domain/Entities/User/Model'
@@ -46,25 +39,11 @@ export default class Controller implements Routeable, Patheable {
 	@inject(TYPES.GeteableModel) private connectionProvider: GeteableModel
 	@inject(TYPES.Authenticable) private authenticationService: Authenticable
 	@inject(TYPES.UserServiceableDomain) private userService: Serviceable
-	//@inject(TYPES.SessionServiceableDomain) private sessionService: SesssionServiceable
-
 	@inject(TYPES.Schemable) @named(TYPES.User) private userSchema: Schemable
-	/* 	@inject(TYPES.Schemable) @named(TYPES.Company) private companySchema: Schemable */
-	//	@inject(TYPES.Schemable) @named(TYPES.Session) private sessionSchema: Schemable
-	@inject(TYPES.Schemable) @named(TYPES.Mail) private mailSchema: Schemable
-	//	@inject(TYPES.Schemable) @named(TYPES.Permission) private permissionSchema: Schemable
-
 	@inject(TYPES.Validable) @named(TYPES.Login) private loginDto: Validable
 	@inject(TYPES.Validable) @named(TYPES.User) private userDto: Validable
-	//	@inject(TYPES.Validable) @named(TYPES.Session) private sessionDto: Validable
 
 	@inject(TYPES.SendeableMail) private sendMailController: SendeableMail
-
-	//@inject(TYPES.SessionInterface) private session: SessionInterface
-
-	//@inject(TYPES.SessionBuilderable) private sessionBuilder: SessionBuilderable
-
-	//@inject(TYPES.Socketable) private socket: Socketable
 
 	constructor() {
 		this.initializeRoutes(this.validationProvider)
@@ -74,7 +53,6 @@ export default class Controller implements Routeable, Patheable {
 		this.router.post(`${this.path}/requestReset/:db`, [], this.requestResetPass)
 		this.router.post(`${this.path}/reset/:db/:user`, [], this.resetPass)
 		this.router.post(`${this.path}/register/:db`, [validationProvider.validate(this.userDto)], this.registration)
-		this.router.post(`${this.path}/loginverified`, [validationProvider.validate(this.loginDto)], this.loggingInVerified)
 		this.router.post(`${this.path}/login/:db`, [validationProvider.validate(this.loginDto)], this.loggingIn)
 		this.router.post(`${this.path}/validate`, [validationProvider.validate(this.loginDto)], this.validateUser)
 	}
@@ -154,7 +132,6 @@ export default class Controller implements Routeable, Patheable {
 			const email = request.body.email
 			if (email) {
 				let userModel: Model<Document, {}> = await this.connectionProvider.getModel(db, this.userSchema.name, this.userSchema)
-				//let mailModel: Model<Document, {}> = await this.connectionProvider.getModel(db, this.mailSchema.name, this.mailSchema)
 
 				const existUser = await this.userService.existUserWithThatEmail(email, userModel)
 
@@ -190,11 +167,20 @@ export default class Controller implements Routeable, Patheable {
 							'Challenge Backend | Recupero de contraseña',
 						)
 
-						this.responserService.res = {
-							result: userResponse.result,
-							message: userResponse.message,
-							status: userResponse.status,
-							error: userResponse.error,
+						if (emailResponse.result) {
+							this.responserService.res = {
+								result: emailResponse.result,
+								message: 'Usuario registrado correctamente. Te enviamos un e-mail para continuar con la validación de tu cuenta. En caso que no lo encuentres revisa tu casilla de spam.',
+								status: emailResponse.status,
+								error: emailResponse.error,
+							}
+						} else {
+							this.responserService.res = {
+								result: emailResponse.result,
+								message: emailResponse.message,
+								status: emailResponse.status,
+								error: emailResponse.error,
+							}
 						}
 					} else {
 						this.responserService.res = {
@@ -293,8 +279,6 @@ export default class Controller implements Routeable, Patheable {
 		const userData: Registrable = request.body
 		const database: any = request.params.db
 
-		//const mailModel: Model<Document, {}> = await this.connectionProvider.getModel(database, this.mailSchema.name, this.mailSchema)
-		//const sessionModel: Model<Document, {}> = await this.connectionProvider.getModel(database, this.sessionSchema.name, this.sessionSchema)
 		const model: Model<Document, {}> = await this.connectionProvider.getModel(database, this.userSchema.name, this.userSchema)
 
 		if (database && database != '') {
@@ -378,44 +362,6 @@ export default class Controller implements Routeable, Patheable {
 				const model: Model<Document, {}> = await this.connectionProvider.getModel(database, this.userSchema.name, this.userSchema)
 				const loginResponse: DomainResponseable = await this.authenticationService.login(logInData, database, model, model)
 
-				if (loginResponse.result !== undefined) {
-					this.responserService.res = {
-						result: loginResponse.result,
-						message: loginResponse.message,
-						status: loginResponse.status,
-						error: loginResponse.error,
-					}
-				} else {
-					this.responserService.res = { result: 'Nop', message: 'La capa superior contesto undefined', error: '', status: 500 }
-				}
-			} catch (error) {
-				console.error(error)
-				throw new Error(`Error: ${error.message}`)
-			}
-		} else {
-			this.responserService.res = {
-				result: {},
-				message: 'Indicar a que db corresponde',
-				status: 428,
-				error: 'No se ha indicado la db',
-			}
-		}
-
-		if (this.responserService.res.status) {
-			response.status(this.responserService.res.status).send(this.responserService.res)
-		} else {
-			response.status(500).send(this.responserService.res)
-		}
-	}
-
-	private loggingInVerified = async (request: Request, response: Response, next: NextFunction) => {
-		const logInData: LogueableWithUser = request.body
-		const database: any = request.query.database
-
-		if (database && database != '') {
-			try {
-				const model: Model<Document, {}> = await this.connectionProvider.getModel(database, this.userSchema.name, this.userSchema)
-				const loginResponse: DomainResponseable = await this.authenticationService.loginVerified(logInData, database, model)
 				if (loginResponse.result !== undefined) {
 					this.responserService.res = {
 						result: loginResponse.result,

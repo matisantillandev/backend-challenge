@@ -11,7 +11,6 @@ import GeteablePropertyStorage from '../Ports/GeteablePropertyStorage'
 import GeteableClaimStorage from '../Ports/GeteableClaimStorage'
 import GeteableAwsStorage from '../Ports/GeteableAwsStorage'
 import RequestWithUser from '../../Ports/RequestWithUser'
-import * as moment from 'moment'
 
 const path = require('path')
 
@@ -19,7 +18,6 @@ const path = require('path')
 export default class Storage implements GeteableAgreementStorage, GeteableCompanyStorage, GeteablePropertyStorage, GeteableClaimStorage, GeteableAwsStorage {
 	constructor() {
 		const credentials = new aws.SharedIniFileCredentials({ profile: process.env.AWS_PROFILE })
-		console.log(credentials)
 		aws.config.credentials = credentials
 
 		aws.config.getCredentials(function (err) {
@@ -71,7 +69,32 @@ export default class Storage implements GeteableAgreementStorage, GeteableCompan
 		return storage
 	}
 
-	/*  */
+	public awsChangeFilename(actualName: string, newName: string): multer.StorageEngine {
+		const s3 = new aws.S3({ apiVersion: '2006-03-01' })
+
+		const storage = s3
+			.copyObject({
+				Bucket: process.env.AWS_BUCKET,
+				CopySource: `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${actualName}`,
+				Key: newName,
+			})
+			.promise()
+
+		return storage
+	}
+
+	public deleteAwsImage(filename: string): multer.StorageEngine {
+		const s3 = new aws.S3({ apiVersion: '2006-03-01' })
+
+		const storage = s3
+			.deleteObject({
+				Bucket: process.env.AWS_BUCKET,
+				Key: filename,
+			})
+			.promise()
+
+		return storage
+	}
 
 	public getAgreementStorage(): multer.StorageEngine {
 		const plataform: string = process.platform

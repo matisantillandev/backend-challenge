@@ -60,6 +60,7 @@ export default class Controller implements Routeable, Patheable {
 			.get(`${this.path}/:id`, [this.authMid.authenticate, validationProvider.validate(Dto, true)], this.getObjById)
 			.post(this.path, [this.authMid.authenticate, this.authoMid.authorice, validationProvider.validate(Dto)], this.saveObj)
 			.post(`${this.path}/aws`, [uploadAws.single('image')], this.uploadAws)
+			.put(`${this.path}/aws/:fileName/:newName`, [], this.updateImageName)
 			.put(`${this.path}/:id`, [this.authMid.authenticate, this.authoMid.authorice, validationProvider.validate(Dto, true)], this.updateObj)
 			.delete(`${this.path}/:id`, [this.authMid.authenticate, this.authoMid.authorice], this.deleteObj)
 	}
@@ -149,7 +150,7 @@ export default class Controller implements Routeable, Patheable {
 				const url = this.storageAws.getAwsImage(request.params.fileName)
 				this.responserService.res = {
 					result: url,
-					message: 'Get exitoso',
+					message: 'Url obtenida con éxito',
 					status: 200,
 					error: '',
 				}
@@ -246,6 +247,41 @@ export default class Controller implements Routeable, Patheable {
 				message: 'Upload exitoso',
 				status: 200,
 				error: '',
+			}
+		} else {
+			this.responserService.res = {
+				result: [],
+				message: 'No se encontró el archivo',
+				status: 404,
+				error: 'No se encontró el archivo y por ende, no tenemos su ubicación',
+			}
+		}
+		if (this.responserService.res.status) {
+			response.status(this.responserService.res.status).send(this.responserService.res)
+		} else {
+			response.status(500).send(this.responserService.res)
+		}
+	}
+
+	private updateImageName = async (request: RequestWithUser, response: Response, next: NextFunction) => {
+		if (request.params.fileName && request.params.newName) {
+			const url = await this.storageAws.awsChangeFilename(request.params.fileName, request.params.newName)
+			if (Object.entries(url).length > 0 && url.CopyObjectResult) {
+				const deleteImage = await this.storageAws.deleteAwsImage(request.params.fileName)
+
+				this.responserService.res = {
+					result: `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${request.params.newName}`,
+					message: 'El nombre de tu imagen se actulizó correctamente',
+					status: 200,
+					error: '',
+				}
+			} else {
+				this.responserService.res = {
+					result: [],
+					message: 'El nombre de tu imagen no se ha podido actulizar',
+					status: 50,
+					error: '',
+				}
 			}
 		} else {
 			this.responserService.res = {

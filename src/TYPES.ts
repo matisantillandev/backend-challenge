@@ -1,6 +1,7 @@
 import user from '@Presentation/Controllers/User/types'
 import mail from '@Presentation/Controllers/Mail/types'
 import file from '@Presentation/Controllers/File/types'
+import unsplash from '@Presentation/Controllers/Unsplash/types'
 import entity from '@Presentation/Controllers/Entity/types'
 
 let returnEntities: any = {}
@@ -15,6 +16,7 @@ returnEntities = jsonConcat(returnEntities, user)
 returnEntities = jsonConcat(returnEntities, mail)
 returnEntities = jsonConcat(returnEntities, file)
 returnEntities = jsonConcat(returnEntities, entity)
+returnEntities = jsonConcat(returnEntities, unsplash)
 
 let TYPES = {
 	SendeableMail: Symbol.for('SendeableMail'),

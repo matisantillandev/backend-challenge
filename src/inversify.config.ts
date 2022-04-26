@@ -10,6 +10,7 @@ import PermissionContainer from '@Presentation/Controllers/Permission/inversify'
 import RolContainer from '@Presentation/Controllers/Rol/inversify'
 import MailContainer from '@Presentation/Controllers/Mail/inversify'
 import FileContainer from '@Presentation/Controllers/File/inversify'
+import UnsplashContainer from '@Presentation/Controllers/Unsplash/inversify'
 // containerimport
 
 // Interfaces
@@ -90,7 +91,7 @@ container.bind<ConnectionableProvider>(TYPES.ConnectionableProvider).to(Connecti
 container.bind<GeteableModel>(TYPES.GeteableModel).to(ConnectionProvider)
 container.bind<Responseable>(TYPES.Responseable).to(Responser)
 container.bind<Updateable>(TYPES.Updateable).to(Controller)
-container.bind<GeteableAll>(TYPES.GeteableAll).to(Controller)
+container.bind<GeteableAll>(TYPES.GeteableAll).to(Controller).whenTargetNamed(TYPES.GeteableAll)
 container.bind<Saveable>(TYPES.Saveable).to(Controller)
 container.bind<Router>(TYPES.Router).toConstantValue(Router())
 container.bind<Validateable>(TYPES.Validateable).to(Validation)
@@ -128,6 +129,7 @@ let containerReturn = Container.merge(container, EntityContainer)
 containerReturn = Container.merge(containerReturn, PermissionContainer)
 containerReturn = Container.merge(containerReturn, RolContainer)
 containerReturn = Container.merge(containerReturn, FileContainer)
+containerReturn = Container.merge(containerReturn, UnsplashContainer)
 // push
 
 export default containerReturn

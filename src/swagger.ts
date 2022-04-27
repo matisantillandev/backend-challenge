@@ -264,6 +264,22 @@ const swagger: any = {
 						},
 					},
 				},
+				'/unsplash': {
+					get: {
+						tags: ['Pictures'],
+						summary:
+							'Search pictures on Unsplash API by query. Receive an query param called "aggregations" where u must to send an object with an key called match where you going to generate your query search. Example: /unsplash?aggregations={"match": {"query": "dog"}}. Require authentication',
+
+						responses: {
+							'200': {
+								description: 'OK',
+								/* schema: {
+									$ref: '#/definitions/Users',
+								}, */
+							},
+						},
+					},
+				},
 				// newpath
 			},
 			definitions: {

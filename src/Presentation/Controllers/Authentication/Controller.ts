@@ -50,8 +50,7 @@ export default class Controller implements Routeable, Patheable {
 	}
 
 	private initializeRoutes(validationProvider: Validateable) {
-		this.router.post(`${this.path}/requestReset/:db`, [], this.requestResetPass)
-		this.router.post(`${this.path}/reset/:db/:user`, [], this.resetPass)
+		this.router.post(`${this.path}/reset/:db`, [], this.requestResetPass)
 		this.router.post(`${this.path}/register/:db`, [validationProvider.validate(this.userDto)], this.registration)
 		this.router.post(`${this.path}/login/:db`, [validationProvider.validate(this.loginDto)], this.loggingIn)
 		this.router.post(`${this.path}/validate`, [validationProvider.validate(this.loginDto)], this.validateUser)
@@ -143,43 +142,151 @@ export default class Controller implements Routeable, Patheable {
 					}
 					const userResponse = await this.userService.getAll(userModel, aggregations)
 					if (userResponse.result !== undefined) {
-						let from = process.env.EMAIL_SENDER
-						let pass = process.env.EMAIL_SENDER_SECRET
-						let to: string = email
+						console.log({ userResponse })
+						const password = await this.userService.hashPassword(userResponse.result.dni)
+						const updateResonse = await this.userService.update(userResponse.result._id, { password }, userModel, userResponse.result._id)
+						if (Object.keys(updateResonse.result).length > 0) {
+							let from = process.env.EMAIL_SENDER
+							let pass = process.env.EMAIL_SENDER_SECRET
+							let to: string = email
 
-						const emailResponse = await this.sendMailController.sendMail(
-							to,
-							`<!DOCTYPE html>
-								<html lang="en">
-								<head>
-									<meta charset="UTF-8">
-									<meta name="viewport" content="width=device-width, initial-scale=1.0">
-									<title>Challenge Backend | Recupero de contraseña</title>
-								<body>
-								
-									<div>
-										<img src="" alt="Challenge Backend - Recupero de contraseña" style="width: 100%;"/>
-									</div>
-								</body>
-								</html>`,
-							from,
-							pass,
-							'Challenge Backend | Recupero de contraseña',
-						)
+							const emailResponse = await this.sendMailController.sendMail(
+								to,
+								`<!DOCTYPE html>
+									<html lang="es">
+										<head>
+											<meta charset="UTF-8" />
+											<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+											<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+											<title>Recupero de Contraseña | Challenge</title>
+											<link rel="preconnect" href="https://fonts.googleapis.com" />
+											<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+											<link
+												href="https://fonts.googleapis.com/css2?family=Overpass:wght@200;300;500&display=swap"
+												rel="stylesheet"
+											/>
+											<style>
+												html {
+													font-family: Overpass;
+													font-weight: 300;
+												}
+											</style>
+										</head>
+										<body>
+											<div
+												style="
+													width: 600px;
+													height: 600px;
+													border: 2px solid #000000;
+													border-radius: 13.2px;
+													position: relative;
+												"
+											>
+												<div
+													style="
+														width: 100%;
+														height: 100px;
+														background: #000000;
+														display: flex;
+														flex-direction: row;
+														justify-content: center;
+														align-items: center;
+													"
+												>
+													<img
+														style="max-width: 40px; height: auto;"
+														src="https://res.cloudinary.com/msantillandev-41482397/image/upload/v1651052493/logo-white_vtntlq.svg"
+													/>
+													<h3 style="color: #ffffff;">
+														Recuperación de contraseña
+													</h3>
+												</div>
+									
+												<div style="padding: 40px; height: 320px">
+													<h2>Hola ${userResponse.result.name}!</h2>
+													<p>
+														Haz recuperado tu contraseña correctamente. Para acceder al sitio
+														nuevamente debes ingresar utilizando tu correo electronico y tu nueva
+														contraseña es tu dni.
+													</p>
+												</div>
+												<div
+													style="
+														width: 100%;
+														height: 100px;
+														background: #000000;
+														position: absolute;
+														bottom: 0;
+														left: 0;
+													"
+												>
+													<ul
+														style="
+															width: auto;
+															height: 100px;
+															display: flex;
+															flex-direction: row;
+															justify-content: space-around;
+															align-items: center;
+														"
+													>
+														<li style="list-style: none;">
+															<a
+																style="color: #ffffff; text-decoration: none;"
+																href="https://aluxion.com/aviso-legal.html"
+																target="_blank"
+																>Aviso legal</a
+															>
+														</li>
+														<li style="color: #ffffff; list-style: none;">
+															<a
+																style="color: #ffffff; text-decoration: none;"
+																href="https://aluxion.com/aviso-cookies.html"
+																target="_blank"
+																>Aviso de cookies</a
+															>
+														</li>
+														<li style="color: #ffffff; list-style: none;">
+															<a
+																style="color: #ffffff; text-decoration: none;"
+																href="https://aluxion.com/politica-de-privacidad.html"
+																target="_blank"
+															>
+																Política de privacidad</a
+															>
+														</li>
+													</ul>
+												</div>
+											</div>
+										</body>
+									</html>
+								`,
+								from,
+								pass,
+								'Challenge Backend | Recupero de contraseña',
+							)
 
-						if (emailResponse.result) {
-							this.responserService.res = {
-								result: emailResponse.result,
-								message: 'Usuario registrado correctamente. Te enviamos un e-mail para continuar con la validación de tu cuenta. En caso que no lo encuentres revisa tu casilla de spam.',
-								status: emailResponse.status,
-								error: emailResponse.error,
+							if (emailResponse.result) {
+								this.responserService.res = {
+									result: emailResponse.result,
+									message: 'Contraseña recuperada correctamente. Te enviamos un e-mail para continuar con la validación de tu cuenta. En caso que no lo encuentres revisa tu casilla de spam.',
+									status: emailResponse.status,
+									error: emailResponse.error,
+								}
+							} else {
+								this.responserService.res = {
+									result: emailResponse.result,
+									message: emailResponse.message,
+									status: emailResponse.status,
+									error: emailResponse.error,
+								}
 							}
 						} else {
 							this.responserService.res = {
-								result: emailResponse.result,
-								message: emailResponse.message,
-								status: emailResponse.status,
-								error: emailResponse.error,
+								result: [],
+								message: 'No se pudo actualizar el usuario',
+								status: 500,
+								error: 'Error al actualizar el usuario',
 							}
 						}
 					} else {
@@ -223,60 +330,8 @@ export default class Controller implements Routeable, Patheable {
 		}
 	}
 
-	private resetPass = async (request: Request, response: Response, next: NextFunction) => {
-		const db: string = request.params.db
-		const userId: string = request.params.id
-		const objData: { pass: string } = request.body
-
-		let userModel: Model<Document, {}> = await this.connectionProvider.getModel(db, this.userSchema.name, this.userSchema)
-
-		if (db && db != '') {
-			const aggregations = {
-				match: { operationType: { $ne: 'D' }, _id: { $oid: userId } },
-				limit: 1,
-				skip: 0,
-			}
-
-			const userResponse = await this.userService.getAll(userModel, aggregations)
-
-			if (userResponse.result !== undefined) {
-				const resetPasswordResponse = await this.authenticationService.getPass(userResponse.result.email, objData.pass, userId, userModel)
-				if (resetPasswordResponse.result !== undefined) {
-					this.responserService.res = {
-						result: resetPasswordResponse.result,
-						message: resetPasswordResponse.message,
-						status: resetPasswordResponse.status,
-						error: resetPasswordResponse.error,
-					}
-				} else {
-					this.responserService.res = { result: 'Nop', message: 'La capa superior contesto undefined', error: '', status: 500 }
-				}
-			} else {
-				this.responserService.res = {
-					result: undefined,
-					message: 'El e-mail no se encuentra registrado, por favor verifica que esté escrito correctamente',
-					status: 404,
-					error: '',
-				}
-			}
-		} else {
-			this.responserService.res = {
-				result: {},
-				message: 'Falta indicar a que negocio pertenece',
-				status: 428,
-				error: 'Agregar el negocio al cual pertenece en la consulta',
-			}
-		}
-
-		if (this.responserService.res.status) {
-			response.status(this.responserService.res.status).send(this.responserService.res)
-		} else {
-			response.status(500).send(this.responserService.res)
-		}
-	}
-
 	private registration = async (request: Request, response: Response, next: NextFunction) => {
-		const userData: Registrable = request.body
+		const userData = request.body
 		const database: any = request.params.db
 
 		const model: Model<Document, {}> = await this.connectionProvider.getModel(database, this.userSchema.name, this.userSchema)
@@ -292,19 +347,112 @@ export default class Controller implements Routeable, Patheable {
 					const emailResponse = await this.sendMailController.sendMail(
 						to,
 						`<!DOCTYPE html>
-								<html lang="en">
+							<html lang="en">
 								<head>
-									<meta charset="UTF-8">
-									<meta name="viewport" content="width=device-width, initial-scale=1.0">
-									<title>Registro de Usuario - Challenge Backend</title>
+									<meta charset="UTF-8" />
+									<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+									<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+									<title>Información de cuenta | Challenge</title>
+									<link rel="preconnect" href="https://fonts.googleapis.com" />
+									<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+									<link
+										href="https://fonts.googleapis.com/css2?family=Overpass:wght@200;300;500&display=swap"
+										rel="stylesheet"
+									/>
+									<style>
+										html {
+											font-family: Overpass;
+											font-weight: 300;
+										}
+									</style>
+								</head>
 								<body>
-									
-									<div>
-										<img src="" alt="Registro de Usuario - Challenge Backend" style="width: 100%;"/>
+									<div
+										style="
+											width: 600px;
+											height: 600px;
+											border: 2px solid #000000;
+											border-radius: 13.2px;
+											position: relative;
+										"
+									>
+										<div
+											style="
+												width: 100%;
+												height: 100px;
+												background: #000000;
+												display: flex;
+												flex-direction: row;
+												align-items: center;
+											"
+										>
+											<img
+												style="max-width: 40px; height: auto; margin: 25px;"
+												src="./logo-white.svg"
+											/>
+											<h3 style="color: #ffffff;">
+												Información de cuenta
+											</h3>
+										</div>
+							
+										<div style="padding: 40px; height: 320px">
+											<h2>Bienvenido ${userData.name}!</h2>
+											<p>
+												Haz creado tu usuario correctamente. Recuerda estar al tanto de los
+												avisos legales y políticas de privacidad. Muchas gracias por unirte!
+											</p>
+										</div>
+										<div
+											style="
+												width: 100%;
+												height: 100px;
+												background: #000000;
+												position: absolute;
+												bottom: 0;
+												left: 0;
+											"
+										>
+											<ul
+												style="
+													width: auto;
+													height: 50%;
+													display: flex;
+													flex-direction: row;
+													justify-content: space-around;
+													align-items: center;
+												"
+											>
+												<li style="list-style: none;">
+													<a
+														style="color: #ffffff; text-decoration: none;"
+														href="https://aluxion.com/aviso-legal.html"
+														target="_blank"
+														>Aviso legal</a
+													>
+												</li>
+												<li style="color: #ffffff; list-style: none;">
+													<a
+														style="color: #ffffff; text-decoration: none;"
+														href="https://aluxion.com/aviso-cookies.html"
+														target="_blank"
+														>Aviso de cookies</a
+													>
+												</li>
+												<li style="color: #ffffff; list-style: none;">
+													<a
+														style="color: #ffffff; text-decoration: none;"
+														href="https://aluxion.com/politica-de-privacidad.html"
+														target="_blank"
+													>
+														Política de privacidad</a
+													>
+												</li>
+											</ul>
+										</div>
 									</div>
-								
 								</body>
-								</html>`,
+							</html>
+						`,
 						from,
 						pass,
 						'Challenge Backend - Información de cuenta',

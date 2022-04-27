@@ -7,43 +7,40 @@ import { IsDefined, IsEmail, IsNumber, isNumber, IsString, MinLength, ValidateIf
 
 @injectable()
 export default class EntityDto extends DtoUtil implements Interface {
-
-	@ValidateIf(o => o.name !== undefined)
+	@ValidateIf((o) => o.name !== undefined)
 	@IsString()
 	public lastname: string
 
-	@ValidateIf(o => o.name !== undefined)
+	@ValidateIf((o) => o.name !== undefined)
 	@IsString()
 	public name: string
 
-	
-	@ValidateIf(o => o.dni !== undefined)
-	@IsNumber({}, {
-		message: "El dni debe ser un número"
-	})
-	public dni: number
+	@ValidateIf((o) => o.dni !== undefined)
+	@IsString()
+	public dni: string
 
 	@IsDefined()
-	@IsEmail({}, {
-		message: "Se debe ingresar un email válido."
-	})
+	@IsEmail(
+		{},
+		{
+			message: 'Se debe ingresar un email válido.',
+		},
+	)
 	public email: string
 
-	@ValidateIf(o => o.password !== undefined)
-	@MinLength(8,{
-		message: "La contraseña debe tener minimo 8 carácteres."
+	@ValidateIf((o) => o.password !== undefined)
+	@MinLength(8, {
+		message: 'La contraseña debe tener minimo 8 carácteres.',
 	})
 	@IsString()
 	public password: string
 
-	@ValidateIf(o => o.password !== undefined)
+	@ValidateIf((o) => o.password !== undefined)
 	public enabled: boolean
 
-	@ValidateIf(o => o.token !== undefined)
+	@ValidateIf((o) => o.token !== undefined)
 	@IsString()
 	public token: string
 	public verified: boolean
 	public rol: Schema.Types.ObjectId
-
-
 }

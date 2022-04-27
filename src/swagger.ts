@@ -72,7 +72,7 @@ const swagger: any = {
 						},
 					},
 				},
-				'/auth/reset/{db}/{userEmail}': {
+				'/auth/reset/{db}': {
 					post: {
 						tags: ['Authentication'],
 						summary: 'If users forgot their password, can equest reset password here..',
@@ -81,15 +81,6 @@ const swagger: any = {
 								name: 'db',
 								in: 'path',
 								description: 'Database where API must connect ',
-								required: true,
-								schema: {
-									type: 'string',
-								},
-							},
-							{
-								name: 'userEmail',
-								in: 'path',
-								description: 'Email of the user to recover password',
 								required: true,
 								schema: {
 									type: 'string',
@@ -291,7 +282,7 @@ const swagger: any = {
 					$ref: '#/definitions/Authentication',
 				},
 				Reset: {
-					properties: { newPassword: { type: String, typed: 'string' } },
+					properties: { email: { type: String, typed: 'string' } },
 				},
 				File: {},
 				// newdefinitions

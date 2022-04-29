@@ -20,6 +20,16 @@ UNSPLASH_ACCESS_KEY=API_KEY_UNSPLASH
 El email debe ser GMAIL y es necesario tener activado el "acceso de aplicaciones menos seguras" en tu cuenta de gmail.
 Para configurarlo debes ingresar en "gestion de tu cuenta de google", apartado de seguridad y buscar "acceso de aplicaciones menos seguras". Ingresar a dicha opción y asegurarse de que salga "activada"
 
+Tambien es muy importante crear para la utilización de los servicios de aws, el file "credentials" en el folder ".aws" con la siguiente estructura
+
+```
+[default]
+aws_access_key_id=YOUR_ACCESS_KEY_ID
+aws_secret_access_key=YOUR_SECRET_ACCESS_KEY
+region=YOUR_AWS_REGION
+output=json
+```
+
 ### Start
 
 `yarn start:dev`
